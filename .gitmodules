@@ -1,0 +1,3 @@
+[submodule "extern/archipelago.js"]
+	path = extern/archipelago.js
+	url = git@github.com:DrAwesome4333/archipelago.js.git
