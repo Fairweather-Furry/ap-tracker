@@ -200,7 +200,7 @@ const createTagManager = (checkManager) => {
                 if (tag.type.convertToWhenChecked === null) {
                     removeTag(tagData, saveId);
                 } else if (tag.type.convertToWhenChecked) {
-                    removeTag(tagData, saveId);
+                    clearTagListeners(tag.tagId);
                     let newTagData = createTagData();
                     newTagData.checkName = tagData.checkName;
                     newTagData.tagId = tagData.tagId;
@@ -213,16 +213,18 @@ const createTagManager = (checkManager) => {
     };
 
     /**
+     * Creates a new tag, or updates an existing tag
      * @param {TagData} tagData
      * @param {string | undefined} saveId
+     * @param {boolean} [fromRemote] 
      */
-    const addTag = (tagData, saveId) => {
+    const addTag = (tagData, saveId, fromRemote) => {
         let tag = buildTag(tagData);
         // clear any existing listeners about the tag in case of duplicates.
-        removeTag(tagData, saveId);
+        clearTagListeners(tagData.tagId);
 
         if (!tag.type.doNotSave && saveId) {
-            saveTag(tagData, saveId);
+            saveTag(tagData, saveId, fromRemote);
         }
 
         // Add the tag to any relevant checks, set up conversion listeners
@@ -270,8 +272,9 @@ const createTagManager = (checkManager) => {
     /**
      * @param {TagData} tagData
      * @param {string} saveId
+     * @param {boolean} [fromRemote] 
      */
-    const saveTag = (tagData, saveId) => {
+    const saveTag = (tagData, saveId, fromRemote) => {
         let saveData = SavedConnectionManager.getConnectionSaveData(saveId);
         if (!saveData) {
             saveData = {};
@@ -284,13 +287,30 @@ const createTagManager = (checkManager) => {
         }
         saveData.tagData[tagData.tagId] = tagData;
         SavedConnectionManager.updateConnectionSaveData(saveId, saveData);
+
+        if(!fromRemote){
+            // code to sync with server
+        }
     };
+
+
+    /**
+     * Cleans up listener calls for a given tag
+     * @param {string} tagId 
+     */
+    const clearTagListeners = (tagId) => {
+        let cleanUpCalls = tagListenerCleanupCalls.get(tagId);
+            if (cleanUpCalls) {
+                cleanUpCalls.forEach((cleanUpCall) => cleanUpCall());
+            }
+    }
 
     /**
      * @param {TagData} tag
      * @param {string | undefined} saveId
+     * @param {boolean} [fromRemote] 
      */
-    const removeTag = (tag, saveId) => {
+    const removeTag = (tag, saveId, fromRemote) => {
         // Delete tag from data if it exists there
         if (saveId && tag.tagId) {
             let saveData = SavedConnectionManager.getConnectionSaveData(saveId);
@@ -321,10 +341,7 @@ const createTagManager = (checkManager) => {
                 }
             }
 
-            let cleanUpCalls = tagListenerCleanupCalls.get(tag.tagId);
-            if (cleanUpCalls) {
-                cleanUpCalls.forEach((cleanUpCall) => cleanUpCall());
-            }
+            clearTagListeners(tag.tagId);
 
             if (found) {
                 checkManager.updateCheckStatus(tag.checkName, {

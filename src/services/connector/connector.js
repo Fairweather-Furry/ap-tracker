@@ -3,6 +3,7 @@ import { API, Client } from "archipelago.js";
 import CONNECTION_MESSAGES from "./connectionMessages";
 import { setAPLocations, setupAPCheckSync } from "./checkSync";
 import SavedConnectionManager from "../savedConnections/savedConnectionManager";
+// @ts-ignore
 import { TrackerBuilder } from "../../games/TrackerBuilder";
 import NotificationManager, {
     MessageType,
